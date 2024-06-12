@@ -1,0 +1,27 @@
+writer_doc_id = "u3ysec782f8c3190d41b0ad2c13080bc0ec2d";
+// merge_field_response = zoho.writer.getMergeFields(writer_doc_id,"zoho_one_conn");
+// info merge_field_response;
+record_writer_map=Map();
+record_writer_map.put("CustomerID",9238);
+record_writer_map.put("Street","92th road");
+record_writer_map.put("City","Vatican");
+record_writer_map.put("Zip",238);
+record_writer_map.put("Country","Nigeria");
+record_writer_map.put("Date","9.03.22");
+invoice = List();
+invoice_map1={"Invoice.Invoice":"shezan's","Invoice.Reference":"karim","Invoice.Date":"5.04.24","Invoice.Status":"panding","Invoice.Amount":500,"Invoice.Balance":400};
+invoice.add(invoice_map1);
+record_writer_map.put("Invoice", invoice);
+writer_data = {"data":{record_writer_map}};
+params = {"output_format":"pdf","merge_data":writer_data};
+writer_resp = invokeurl
+[
+	url :"https://zohoapis.com/writer/api/v1/documents/" + writer_doc_id + "/merge"
+	type :POST
+	parameters:params
+	connection:"zoho_one_conn"
+];
+info writer_resp;
+file_name = "Apon" + ".pdf";
+writer_resp.setFileName(file_name);
+zoho.crm.attachFile("Contacts","4731441000015217001",writer_resp);
