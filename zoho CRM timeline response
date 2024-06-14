@@ -1,0 +1,34 @@
+
+timeline_res_list=List();
+contact_record_list = zoho.crm.getRecords("Contacts",1,200,{"cvid":"4731441000015806175"});
+for each  contact_record in contact_record_list
+{
+	contact_id= contact_record.get("id");
+
+timeline_response=invokeurl
+[
+url:"https://www.zohoapis.com/crm/v5/Contacts/"+contact_id+"/__timeline?"
+type:GET
+connection:"zoho_crm_connection"
+];
+timeline_responses= ifnull(timeline_response.get("__timeline"), List());
+for each res in timeline_responses
+{
+	source= ifNull(res.get("source"),"");
+	field_history=ifnull(res.get("field_history"), List());
+	if ( field_history.size() > 0 ) 
+    {
+		for each api in field_history
+    {
+		api_name=ifNull(api.get("api_name"),"");
+		if ( source == "crm_ui" && api_name == "Phone") 
+        {
+			timeline_map={"id":contact_id,"source":source,"field name":api_name};
+// 			info timeline_map;
+			timeline_res_list.add(timeline_map);
+        }
+    }
+    }
+}
+}
+info timeline_res_list;
