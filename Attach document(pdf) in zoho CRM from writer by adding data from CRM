@@ -1,0 +1,62 @@
+// response = zoho.books.getRecordsById("Invoices", "771396862", "3089228000004818040", "zoho_books_conn");
+// info response;
+// searchParam = {"message":"success"};  
+// response = zoho.books.getRecords("Invoices","771396862",searchParam,"zoho_books_conn");
+// for each res in response
+// {
+// 	info res;
+// }
+response = invokeurl
+[
+	url :"https://www.zohoapis.com/books/v3/invoices?organization_id=771396862"
+	type :GET
+	connection:"zoho_books_conn"
+];
+invoice_responses = response.get("invoices");
+invoice_list = List();
+balance = 0;
+amount = 0;
+for each  invoice in invoice_responses
+{
+	Invoice = ifNull(invoice.get("invoice_number"),"");
+	Reference = ifNull(invoice.get("reference_number"),"");
+	Date = ifNull(invoice.get("date"),"");
+	Amount = ifNull(invoice.get("write_off_amount"),0);
+	Balance = ifNull(invoice.get("balance"),0);
+	Status = ifNull(invoice.get("status"),"");
+	invoice_map1 = {"Invoice.Invoice":Invoice,"Invoice.Reference":Reference,"Invoice.Date":Date,"Invoice.Status":Status,"Invoice.Amount":{"$" + ' ' + Amount},"Invoice.Balance":{"$" + ' ' + Balance}};
+	invoice_list.add(invoice_map1);
+	amount = amount + ifNull(invoice.get("write_off_amount"),0);
+	balance = balance + ifNull(invoice.get("balance"),0);
+}
+// 	info {"balance":balance};
+// 	info {"amount":amount};
+// 	info invoice_list;
+writer_doc_id = "u3ysec782f8c3190d41b0ad2c13080bc0ec2d";
+// merge_field_response = zoho.writer.getMergeFields(writer_doc_id,"zoho_one_conn");
+// info merge_field_response;
+record_writer_map = Map();
+record_writer_map.put("Total_Amount",amount);
+record_writer_map.put("Total_Balance",balance);
+record_writer_map.put("CustomerID",9238);
+record_writer_map.put("Street","92th road");
+record_writer_map.put("City","Vatican");
+record_writer_map.put("Zip",238);
+record_writer_map.put("Country","Nigeria");
+record_writer_map.put("Date","9.03.22");
+record_writer_map.put("Total_Amount",{"$" + ' ' + amount});
+record_writer_map.put("Total_Balance",{"$" + ' ' + balance});
+record_writer_map.put("Invoice",invoice_list);
+writer_data = {"data":{record_writer_map}};
+params = {"output_format":"pdf","merge_data":writer_data};
+writer_resp = invokeurl
+[
+	url :"https://zohoapis.com/writer/api/v1/documents/" + writer_doc_id + "/merge"
+	type :POST
+	parameters:params
+	connection:"zoho_one_conn"
+];
+info writer_resp;
+file_name = "Apon" + ".pdf";
+writer_resp.setFileName(file_name);
+zoho.crm.attachFile("Contacts","4731441000015674611",writer_resp);
