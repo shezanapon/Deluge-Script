@@ -1,0 +1,90 @@
+acc_id=4728790000013051017;
+deals_record = zoho.crm.getRelatedRecords("Deals","Accounts",acc_id);
+info deals_record.size();
+all_deal_record_list = List();
+if(deals_record.size() > 0)
+{
+	for each  deal in deals_record
+	{
+		name = ifNull(deal.get("Deal_Name"),"");
+		project_type = ifNull(deal.get("Type"),"");
+		amount = ifNull(deal.get("Amount"),0);
+		property_full_street = ifNull(deal.get("Property_Full_Street"),"");
+		Entity = ifNull(deal.get("Entity"),"");
+		Tags=ifNull(deal.get("Tag"),List());
+		tag_name=List();
+		if ( Tags != null && Tags.size() > 0 ) 
+        {
+			for each Tag in Tags
+			  {
+				  name= Tag.get("name");
+				  tag_name.add(name);
+			  }
+        }
+		deal_rec_map = {"Name":name,"Project_Type":project_type,"Amount":amount,"property_full_street":property_full_street,"Entity":Entity,"Tag":tag_name.toString()};
+		all_deal_record_list.add(deal_rec_map);
+	}
+}
+// info all_deal_record_list;
+
+child_acc_res = zoho.crm.getRelatedRecords("Child_Accounts","Accounts",acc_id);
+if(child_acc_res != null && child_acc_res.size() > 0)
+{
+	for each  child_acc in child_acc_res
+	{
+		child_acc_id = child_acc.get("id");
+		deals_from_child_acc = zoho.crm.getRelatedRecords("Deals","Accounts",child_acc_id);
+		if(deals_from_child_acc != null && deals_from_child_acc.size() > 0)
+		{
+			for each  child_deal in deals_from_child_acc
+			{
+				name = ifNull(child_deal.get("Deal_Name"),"");
+				project_type = ifNull(child_deal.get("Type"),"");
+				amount = ifNull(child_deal.get("Amount"),0);
+				property_full_street = ifNull(child_deal.get("Property_Full_Street"),"");
+				Entity = ifNull(child_deal.get("Entity"),"");
+				Tags=ifNull(child_deal.get("Tag"),List());
+				tag_name=List();
+				if ( Tags != null && Tags.size() > 0 ) 
+				{
+					for each Tag in Tags
+					  {
+						  name= Tag.get("name");
+						  tag_name.add(name);
+					  }
+				}
+				deal_rec_map = {"Name":name,"Project_Type":project_type,"Amount":amount,"property_full_street":property_full_street,"Entity":Entity,"Tag":tag_name.toString()};
+				all_deal_record_list.add(deal_rec_map);
+			}
+		}
+	}
+}
+// info all_deal_record_list;
+if(all_deal_record_list.size() > 0)
+{
+	//Prepare the custom XML related list
+	rowVal = 0;
+	responseXML = "";
+	responseXML = responseXML + "<record>";
+	for each  deal in all_deal_record_list
+	{
+		responseXML = responseXML + "<row no='" + rowVal + "'>";
+		responseXML = responseXML + "<FL val='Deal Name'>" + deal.get("Name") + "</FL>";
+		responseXML = responseXML + "<FL val='Project Type'>" + deal.get("Project_Type") + "</FL>";
+		responseXML = responseXML + "<FL val='Property Full Street'>" + deal.get("property_full_street") + "</FL>";
+		responseXML = responseXML + "<FL val='Amount'>$" + deal.get("Amount") + "</FL>";
+		responseXML = responseXML + "<FL val='Entity'>" + deal.get("Entity") + "</FL>";
+		responseXML = responseXML + "<FL val='Tag'>" + deal.get("Tag") + "</FL>";
+		responseXML = responseXML + "</row>";
+		info {"XML code" + " " + responseXML};
+		rowVal = rowVal + 1;
+	}
+	//Close off the XML
+	responseXML = responseXML + "</record>";
+}
+else
+{
+	//Message returned of there are no other deals for this account.
+	responseXML = "<error><message>No Deals Associated with this Account</message></error>";
+}
+return responseXML;
