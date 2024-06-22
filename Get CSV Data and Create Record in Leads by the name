@@ -1,0 +1,32 @@
+acc_id = 4728790000013051017;
+res = zoho.crm.getRecordById("Accounts", acc_id);
+
+files = res.get("File_Upload_1");
+if (files != null && files.size() > 0) {
+    for each file in files {
+        file_id = ifNull(file.get("file_Id"), "");
+        file_name = ifNull(file.get("file_Name"), "");
+        url = "https://zohoapis.com/crm/v6/files?id=" + file_id;
+        fileVariable = invokeUrl [
+            url: url
+            type: GET
+            connection: "zoho_crm_conn"
+        ];
+        csv_file_content = fileVariable.getFileContent();
+        
+        // Replace tabs with commas and process CSV content
+        csv_file_content_list = csv_file_content.replaceAll("\n", ",");
+		info csv_file_content_list;
+		index=0;
+		for each data in csv_file_content_list
+        {
+			if ( index>0 && data != "") 
+            {
+				Last_Name={"Last_Name":data};
+				create_record=zoho.crm.createRecord("Leads", Last_Name);
+				info create_record;
+            }
+			index=index+1;
+        }
+    }
+}
