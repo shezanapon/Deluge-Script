@@ -1,0 +1,38 @@
+// record_owner_email=zoho.adminuserid;
+template_url = "https://www.zohoapis.com/crm/v2.1/settings/email_templates/" + "4728790000012538001";
+acc_id="4728790000013051017";
+acc_res=zoho.crm.getRecordById("Accounts", acc_id);
+attachment_responses= acc_res.get("File_Upload_1");
+if ( attachment_responses!=null && attachment_responses.size()>0 ) 
+{
+	for each attachment_res in attachment_responses
+	{	
+		file_Id=attachment_res.get("file_Id");
+	// 	info file_Id;
+		url = "https://zohoapis.com/crm/v6/files?id=" + file_Id;
+		download_response = invokeurl
+		[
+			url :url
+			type :GET
+			connection:"zoho_crm_conn"
+		];
+
+		email_template_response = invokeurl
+		[
+			url :template_url
+			type :GET
+			connection:"zoho_email_conn"
+		];
+		email_content = email_template_response.get("email_templates").get(0).get("content");
+
+		sendmail
+		[
+			from :zoho.adminuserid
+			to :"test@gmail.com"
+			subject :"Shezan Test"
+			message :email_content
+			Attachments :file: download_response  
+
+		]
+	}
+}
