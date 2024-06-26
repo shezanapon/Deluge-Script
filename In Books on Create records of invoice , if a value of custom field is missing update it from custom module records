@@ -1,0 +1,79 @@
+
+/*
+This is a sample function. Uncomment to execute or make changes to this function.
+invoiceID = invoice.get("invoice_id");
+invoicedate = invoice.get("date").toDate();
+organizationID = organization.get("organization_id");
+*/
+vehicle_responses = invokeurl
+[
+	url :"https://www.zohoapis.com/books/v3/cm_vehicles?organization_id=771396862"
+	type :GET
+	connection:"zoho_books_conn"
+];
+labels = list();
+vehicle_name = Map();
+fields = invoice.get("custom_fields");
+invoiceID = invoice.get("invoice_id");
+for each  field in fields
+{
+	label = field.get("label");
+	labels.add(label);
+	if(label == "Vehicle Name")
+	{
+		value = field.get("value");
+		vehicle_name.put("vehicle_name",value);
+	}
+info field;
+// info vehicle_name;
+module_records = vehicle_responses.get("module_records");
+// info vehicle_responses;
+for each  module_record in module_records
+{
+	record_name = module_record.get("record_name");
+	if(vehicle_name == record_name)
+	{
+		number = module_record.get("cf_number_of_vehicles");
+		price = module_record.get("cf_price");
+		date_time = module_record.get("cf_manufacture_date");
+		for each  individual_label in labels
+		{
+			if(individual_label != "Number of vehicles")
+			{
+				 invoiceMap=map();
+				 itemList=List();
+				 item1=map();
+				 item1.put("api_name", "cf_number_of_vehicles");
+				 item1.put("value", number);
+				 itemList.add(item1);
+				 invoiceMap.put("line_items", itemList);
+				 response= zoho.books.updateRecord("Invoices", "771396862", invoiceID, invoiceMap, "zoho_books_conn");
+// 				 info response;
+			}
+			if(individual_label != "Price")
+			{
+				 invoiceMap=map();
+				 itemList=List();
+				 item1=map();
+				 item1.put("api_name", "cf_price");
+				 item1.put("value", price);
+				 itemList.add(item1);
+				 invoiceMap.put("line_items", itemList);
+				 response= zoho.books.updateRecord("Invoices", "771396862", invoiceID, invoiceMap, "zoho_books_conn");
+			}
+			if(individual_label != "manufacture date")
+			{
+				 invoiceMap=map();
+				 itemList=List();
+				 item1=map();
+				 item1.put("api_name", "cf_manufacture_date");
+				 item1.put("value", date_time);
+				 itemList.add(item1);
+				 invoiceMap.put("line_items", itemList);
+				 response= zoho.books.updateRecord("Invoices", "771396862", invoiceID, invoiceMap, "zoho_books_conn");
+			}
+			
+		}
+	}
+}
+}
