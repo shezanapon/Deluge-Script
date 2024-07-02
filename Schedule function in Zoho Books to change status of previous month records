@@ -1,0 +1,44 @@
+current_date = today;
+current_month = current_date.month();
+req_month=current_month-1;
+current_year = current_date.year();
+searchParam = {"status":"active"};
+project_response = zoho.books.getRecords("projects","771396862",searchParam,"zoho_books_conn");
+// info project_response;
+projects= ifNull(project_response.get("projects"),list());
+// info projects;
+if ( projects.size() > 0 && projects != null ) 
+{
+for each project in projects
+{
+	project_id= project.get("project_id");
+	project_date= ifNull(project.get("cf_date_unformatted"),"");
+	project_month= ifNull(project_date.month(),0);
+	project_year= ifNull(project_date.year(),0);
+	if (  project_date!="" ) 
+    {
+		if (project_year == current_year || project_month == req_month ) 
+			{
+				response = invokeUrl
+				[
+				url: "https://www.zohoapis.com/books/v3/projects/"+project_id+"/inactive?organization_id=771396862"
+				type: POST
+				connection: "zoho_books_conn"
+				];
+				info response;
+			}
+		else if (project_year+1 == current_year && project_month == 12 && current_month == 1 ) 
+			{
+				response = invokeUrl
+				[
+				url: "https://www.zohoapis.com/books/v3/projects/"+project_id+"/inactive?organization_id=771396862"
+				type: POST
+				connection: "zoho_books_conn"
+				];
+				info response;
+			}
+    }
+	
+}
+}
+
