@@ -1,0 +1,66 @@
+
+queryData = {"worksheet_name":"Sheet1"};
+sheet_response = zoho.sheet.getRecords("u6xlobb59aed10d104e319c880b65b3431eef","Sheet1",queryData,"zoho_sheet_con");
+records = sheet_response.get("records");
+for each  record in records
+{
+	new_line_items = list();
+	customer_name = ifnull(record.get("customer_name"),"");
+	record_date = ifnull(record.get('Date'),'');
+	info record_date;
+	searchParam = {"customer_name":customer_name};
+	customer_response = zoho.books.getRecords("customers","771396862",searchParam,"zoho_books_conn");
+	contacts = customer_response.get("contacts");
+	if(contacts == null || contacts.isEmpty())
+	{
+		update_values = {"contact_name":customer_name};
+		customer_create_res = zoho.books.createRecord("contacts","771396862",update_values,"zoho_books_conn");
+		new_contact = customer_create_res.get("contact");
+		new_customer_id = new_contact.get("contact_id");
+		if(new_customer_id != null)
+		{
+			customer_id = new_customer_id;
+		}
+		else
+		{
+			customer_id = "";
+		}
+	}
+	else
+	{
+		contact_map = contacts.get(0).toMap();
+		customer_id = ifnull(contact_map.get("contact_id"),"");
+	}
+	line_items = ifnull(record.get("Line Item"),{});
+	for each  line_item in line_items
+	{
+		quantity = ifnull(line_item.get("quantity"),0);
+		rate = ifnull(line_item.get("rate"),0);
+		description = ifnull(line_item.get("description"),"");
+		item_name = ifnull(line_item.get("name"),"");
+		if(item_name != "")
+		{
+			searchParam = {"name":item_name};
+			item_response = zoho.books.getRecords("items","771396862",searchParam,"zoho_books_conn");
+			items = ifnull(item_response.get("items"),{});
+			if(items.isEmpty())
+			{
+				item_values = {"name":item_name,"rate":rate,"description":description};
+				item_create = zoho.books.createRecord("items","771396862",item_values,"zoho_books_conn");
+			}
+			line_item1 = Map();
+			line_item1.put("quantity",quantity);
+			line_item1.put("rate",rate);
+			line_item1.put("name",item_name);
+			line_item1.put("description",description);
+			new_line_items.add(line_item1);
+		}
+	}
+	invoice_values = Map();
+	invoice_values.put("line_items",new_line_items);
+	invoice_values.put("customer_name",customer_name);
+	invoice_values.put("customer_id",customer_id);
+	invoice_values.put("date", record_date.toDate());
+	create_invoice = zoho.books.createRecord("invoices","771396862",invoice_values,"zoho_books_conn");
+	info create_invoice;
+}
