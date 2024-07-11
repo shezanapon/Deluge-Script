@@ -1,0 +1,51 @@
+
+deal_List=  List();
+count=0;
+
+iterations = 10;
+iterationString = "".leftPad(iterations).replaceAll(" ",",").toList().subList(0,iterations);
+for each item in iterationString
+{
+	count=count+1;
+	acc_recordMap  =  {"Account_Name":"Test_Account_"+count,"Email":"test"+count+"@gmail.com"};
+	acc_res= zoho.crm.createRecord("Accounts", acc_recordMap);
+// 	info acc_res;
+	acc_id=acc_res.get("id");
+	deal_count=0;
+	iteration_count = 10;
+    iteration_count_String = "".leftPad(iterations).replaceAll(" ",",").toList().subList(0,iterations);
+	
+	for each items in iteration_count_String
+	{
+		deal_count=deal_count+1;
+		deals_recordMap={"Deal_Name":"test"+deal_count,"Stage":"Qualification","Account_Name":{"id":acc_id}};
+		deal_List.add(deals_recordMap);
+	}	
+}
+info deal_List;
+deal_res = zoho.crm.bulkCreate("Deals",deal_List);
+info deal_res;
+
+ query_map = Map(); 
+acc_responses= zoho.crm.getRecords("Accounts",1, 20,query_map,"zoho_crm_conn");
+for each acc_response in acc_responses
+{
+	amount=0;
+	id=acc_response.get("id");
+	related_deals = zoho.crm.getRelatedRecords("Deals", "Accounts", id);
+	
+	for each deal in related_deals
+    {
+		amount=amount+deal.get("Amount");
+    }
+	amount_map={"Total_amount_of_Deals":amount};
+	info zoho.crm.updateRecord("Accounts", id, amount_map);
+}
+
+
+
+
+
+
+
+
