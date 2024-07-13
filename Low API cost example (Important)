@@ -1,0 +1,20 @@
+deals = zoho.crm.getRecords("Deals", 1, 200);
+acc_id_total_map = map();
+for each deal in deals {
+if(deal.get("Account_Name") != null){
+acc_id = deal.get("Account_Name").get("id");
+acc_id_total_map.put(acc_id, ifnull(acc_id_total_map.get(acc_id), 0) + ifnull(deal.get("Amount"),0) );
+}
+}
+upd_list = list();
+for each acc_id in acc_id_total_map.keys(){
+upd_list.add({"id": acc_id, "Total_amount_of_Deals": acc_id_total_map.get(acc_id)});
+if(upd_list.size() == 100){
+info zoho.crm.bulkUpdate("Accounts", upd_list);
+upd_list = list();
+}
+}
+if(upd_list.size() > 0){
+info zoho.crm.bulkUpdate("Accounts", upd_list);
+upd_list = list();
+}
