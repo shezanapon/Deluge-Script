@@ -1,0 +1,41 @@
+deal_res = zoho.crm.getRecordById("Deals",deal_id);
+acc_id = deal_res.get("Account_Name").get("id");
+deal_opt = deal_res.get("Deal_Option");
+info deal_opt;
+acc_res = zoho.crm.getRecordById("Accounts",acc_id);
+Customer_Number = ifnull(acc_res.get("Customer_Number"),0);
+options = {"A":101,"B":102,"C":103,"D":104,"E":105};
+info options.keys();
+deal_num = "";
+if(Customer_Number != 0 || Customer_Number != null)
+{
+	for each  key in options.keys()
+	{
+		if(key == deal_opt)
+		{
+			deal_num = Customer_Number + "." + options.get(key);
+			info deal_num;
+			query_map = {"Deal_Number":deal_num};
+			info query_map;
+			search_deals = zoho.crm.searchRecords("Deals","(Deal_Number:starts_with:" + deal_num + ")");
+			info search_deals;
+			num=01;
+			for each search_deal in search_deals
+			{
+				search_num= ifnull(search_deal.get("Deal_Number").getSuffix(deal_num+"."),0).ceil();
+				num=num+search_num;
+			}
+			info num;
+			if(num < 10)
+			{
+				zero = 0;
+				num = zero.concat(num);
+				info num;
+			}
+			deal_num = Customer_Number + "." + options.get(key) + "." + num;
+			info deal_num;
+			update_deal = zoho.crm.updateRecord("Deals",deal_id,{"Deal_Number":deal_num});
+			info update_deal;
+		}
+	}
+}
