@@ -1,0 +1,51 @@
+alist = List();
+attachments = zoho.crm.getRelatedRecords("Attachments","Module_API_Name",recordId);
+for each  record in attachments
+{
+file_id = record.get("id");
+downloadFile = invokeurl
+[
+url :"https://www.zohoapis.com/crm/v5/Module_API_Name/" + recordId + "/Attachments/" + file_id
+type :GET
+connection:"crm_oauth_connection"
+];
+downloadFile.setParamName("file");
+response = invokeurl
+[
+url :"https://www.zohoapis.com/crm/v5/files"
+type :POST
+files:downloadFile
+connection:"crm_oauth_connection"
+];
+fid = response.get("data").get(0).get("details").get("id");
+attachmap = Map();
+attachmap.put("id",fid);
+alist.add(attachmap);
+}
+sendto = Map();
+sendto.put("email","test@test.com");
+tolist = List();
+tolist.add(sendto);
+sendfrom = Map();
+sendfrom.put("email","test@test.com");
+tempmp = Map();
+tempmp.put("id","1234567890657"); //email template id
+mp = Map();
+mp.put("from",sendfrom);
+mp.put("to",tolist);
+mp.put("template",tempmp);
+mp.put("attachments",alist);
+mp.put("org_email",true);
+dlist = List();
+dlist.add(mp);
+data = Map();
+data.put("data",dlist);
+info data;
+sendmail = invokeurl
+[
+url :"https://www.zohoapis.com/crm/v5/Module_API_Name/" + recordId + "/actions/send_mail"
+type :POST
+parameters:data + ""
+connection:"crm_oauth_connection"
+];
+info sendmail;
