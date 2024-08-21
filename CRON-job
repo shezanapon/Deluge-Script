@@ -1,0 +1,70 @@
+set_value = null;
+unique_key = "sync_account_big_battery";
+cache_url = "https://api.easy-pluginz.com/admin/v2/utils/getincrementalvalue?key=" + unique_key;
+if(set_value != null)
+{
+	cache_url = cache_url + "&value=" + set_value;
+}
+page_count = ifnull(getUrl(cache_url).get("data"),"0").toLong();
+info page_count;
+per_page = 10;
+accounts = zoho.crm.getRecords("Accounts",page_count,per_page);
+if(accounts.size() < per_page)
+{
+	sendmail
+	[
+		from :zoho.adminuserid
+		to :"ntc.ctg@gmail.com"
+		subject :"Stop[ CRON Big Batter " + now
+		message :"Stop CRON"
+	]
+}
+for each  account in accounts
+{
+	acc_id = account.get("id");
+	response = invokeurl
+	[
+		url :"https://www.zohoapis.com/books/v3/crm/account/" + acc_id + "/import?organization_id=858773936"
+		type :POST
+		connection:"zoho_books_connection"
+	];
+	customer = ifnull(response.get("data"),Map());
+	customer_id = ifnull(customer.get("customer_id"),"");
+	info customer_id;
+	address_count = 0;
+	if(customer_id != "")
+	{
+		account_addresses = zoho.crm.getRelatedRecords("Address","Accounts",acc_id);
+		for each  account_address in account_addresses
+		{
+			parameters_data_for_shipping = {"zip":ifnull(account_address.get("Shipping_Zip"),""),"country":ifnull(account_address.get("Shipping_Country"),""),"address":ifnull(account_address.get("Shipping_Address"),""),"city":ifnull(account_address.get("Shipping_City"),""),"country_code":ifnull(account_address.get("Country_Code"),""),"phone":ifnull(account_address.get("Shipping_Phone"),""),"attention":ifnull(account_address.get("Shipping_Attention"),""),"state":ifnull(account_address.get("Shipping_State_Province"),"")};
+			parameters_data_for_billing = {"zip":ifnull(account_address.get("Billing_Zip"),""),"country":ifnull(account_address.get("Billing_Country"),""),"address":ifnull(account_address.get("Billing_Address"),""),"city":ifnull(account_address.get("Billing_City"),""),"country_code":ifnull(account_address.get("Billing_Country_Code"),""),"phone":ifnull(account_address.get("Billing_Phone"),""),"attention":ifnull(account_address.get("Billing_Attention"),""),"state":ifnull(account_address.get("Billing_State_Province"),"")};
+			parameter_list = {parameters_data_for_shipping,parameters_data_for_billing};
+			if(address_count == 0 && customer_id != "")
+			{
+				parameters_data = {"shipping_address":parameters_data_for_shipping,"billing_address":parameters_data_for_billing};
+				address_update = invokeurl
+				[
+					url :"https://www.zohoapis.com/books/v3/contacts/" + customer_id + "?organization_id=858773936"
+					type :PUT
+					parameters:parameters_data.toString()
+					connection:"zoho_books_connection"
+				];
+			}
+			else if(customer_id != "" && address_count > 0)
+			{
+				for each  parameter in parameter_list
+				{
+					additional_address = invokeurl
+					[
+						url :"https://www.zohoapis.com/books/v3/contacts/" + customer_id + "/address?organization_id=858773936"
+						type :POST
+						parameters:parameter.toString()
+						connection:"zoho_books_connection"
+					];
+				}
+			}
+			address_count = address_count + 1;
+		}
+	}
+}
