@@ -1,0 +1,417 @@
+start_time = now;
+products = zoho.crm.getRecords("Products",1,200);
+products.addAll(zoho.crm.getRecords("Products",2,200));
+products.addAll(zoho.crm.getRecords("Products",3,200));
+property_map = List();
+product_list = list();
+for each  product_res in products
+{
+	product_id = product_res.get("id");
+	// // property
+	id = ifnull(product_res.get("PID_Old"),"");
+	date = product_res.get("Modified_Time").toString("yyyy-MM-dd");
+	ref = ifnull(product_res.get("Internal_Reference"),"");
+	price = ifnull(product_res.get("Price"),"");
+	currency = "€";
+	price_freq= "sale";
+	part_ownership=0;
+	leasehold=0;
+	if ( product_res.get("New_Build_Resale") == "New Build" ) 
+    {
+		new_build=1;
+    }
+	else 
+    {
+		new_build=0;
+    }
+// 	info new_build;
+	type = ifnull(product_res.get("Type_of_Property"),"");
+	town = ifnull(product_res.get("Area"),"").remove("- ");
+	province = ifnull(product_res.get("Region"),"");
+	country="Spain";
+	location_detail=ifnull(product_res.get("Location_of_Property"),"");
+	bed = ifnull(product_res.get("Bedrooms"),"");
+	bath = ifnull(product_res.get("Bathrooms"),"");
+	if ( product_res.get("Swimming_Pool") == "Private" || product_res.get("Swimming_Pool") == "Communal" ) 
+    {
+		pool=1;
+    }
+	else 
+    {
+		pool=0;
+    }
+// 	info pool;
+	video = ifnull(product_res.get("Youtube_Video_Code"),"") ;
+	virtual_tour_url="";
+	catastral = ifnull(product_res.get("Catastral_Ref"),"");
+	// //energy_rating
+	consumptions = ifnull(product_res.get("Consumptions"),"");
+	emissions = ifnull(product_res.get("Emissions"),"");
+	// //description
+	desc_de = ifnull(product_res.get("Full_desc_German"),"");
+	desc_en = ifnull(product_res.get("Full_description"),"");
+	desc_es = ifnull(product_res.get("Full_desc_Spanish"),"");
+	desc_nl = ifnull(product_res.get("Full_desc_Dutch"),"");
+	// location
+	latitude=ifnull(product_res.get("Lat"),"");
+	longitude=ifnull(product_res.get("Lng"),"");
+	// //surface_area
+	built = ifnull(product_res.get("Size_Build_m2"),"");
+	plot = ifnull(product_res.get("Size_Land_m2"),"");
+	// //url
+	de="https://www.homeespana.com/de/Immobilie/"+product_res.get("Product_Name");
+	en = ifnull(product_res.get("Link"),"");
+	es="https://www.homeespana.com/es/propiedad"+product_res.get("Product_Name");
+	nl="https://www.homeespana.com/nl/Immobilie/"+product_res.get("Product_Name");
+	
+	//feature
+	
+// 	Swimming_Pool_type
+	if ( product_res.get("Swimming_Pool") == "Private" || product_res.get("Swimming_Pool") == "Communal" ) 
+    {
+		Swimming_Pool_type=product_res.get("Swimming_Pool");
+    }
+	else 
+    {
+		Swimming_Pool_type="";
+    }
+	
+// 	garden
+	if ( product_res.get("Garden") == "Private" || product_res.get("Garden") == "Communal" ) 
+   {
+		garden=product_res.get("Garden");
+   }
+   else 
+    {
+		garden="";
+    }
+	
+	
+	Parking = ifnull(product_res.get("Parking"),"");
+
+// 	Furnished
+	if ( product_res.get("Furnished") == "YES" ) 
+    {
+		Furnished="Furnished";
+    }
+	else if ( product_res.get("Furnished") == "Partially" ) 
+    {
+		Furnished="Partially Furnished";
+    }
+	else 
+    {
+		Furnished="";
+    }
+	
+// 	Fitted_kitchen
+	if ( product_res.get("Fitted_kitchen") == "YES" ) 
+    {
+		Fitted_kitchen="Fitted kitchen";
+    }
+	else 
+    {
+		Fitted_kitchen="";
+    }
+	
+	// 	Double_glazing
+	if(product_res.get("Double_glazing") == "YES")
+	{
+		Double_glazing = "Double glazing";
+	}
+	else
+	{
+		Double_glazing = "";
+	}
+
+	// 	Views_of_Pool
+	if(product_res.get("Views_of_Pool") == "YES")
+	{
+		Views_of_Pool = "Views of Pool";
+	}
+	else
+	{
+		Views_of_Pool = "";
+	}
+	// 	Alarm
+	if(product_res.get("Alarm") == "YES")
+	{
+		Alarm = "Alarm";
+	}
+	else
+	{
+		Alarm = "";
+	}
+	// info Alarm;
+
+	// 	Sea_View
+	if(product_res.get("Sea_View") == "YES")
+	{
+		Sea_View = "Sea View";
+	}
+	else
+	{
+		Sea_View = "";
+	}
+	// info Sea_View;
+	// 	Summer_kitchen
+	if(product_res.get("Summer_kitchen") == "YES")
+	{
+		Summer_kitchen = "Outdoor Kitchen";
+	}
+	else
+	{
+		Summer_kitchen = "";
+	}
+	// info Summer_kitchen;
+	// 	Separate_Accomodation
+	if(product_res.get("Separate_Accomodation") == "YES")
+	{
+		Separate_Accomodation = "Separate Accomodation";
+	}
+	else
+	{
+		Separate_Accomodation = "";
+	}
+	// info Separate_Accomodation;
+	// 	Broadband
+	if(product_res.get("Broadband") == "YES")
+	{
+		Broadband = "Internet connection";
+	}
+	else
+	{
+		Broadband = "";
+	}
+	// info Broadband;
+	// 	Heating
+	if(product_res.get("Heating") == "YES")
+	{
+		Heating = "Heating";
+	}
+	else
+	{
+		Heating = "";
+	}
+	// info Heating;
+	// 	Open_Fire
+	if(product_res.get("Open_Fire") == "YES")
+	{
+		Open_Fire = "Open Fire";
+	}
+	else
+	{
+		Open_Fire = "";
+	}
+	// info Open_Fire;
+	// 	Air_Con
+	if(product_res.get("Air_Con") == "YES")
+	{
+		Air_Con = "Air Conditioned";
+	}
+	else
+	{
+		Air_Con = "";
+	}
+	// info Air_Con;
+	// 	Lift
+	if(product_res.get("Lift") == "YES")
+	{
+		Lift = "Lift";
+	}
+	else
+	{
+		Lift = "";
+	}
+	// info Lift;
+	// 	Underbuild
+	if(product_res.get("Underbuild") == "YES")
+	{
+		Underbuild = "Underbuild";
+	}
+	else
+	{
+		Underbuild = "";
+	}
+	// info Underbuild;
+	// 	Solarium
+	if(product_res.get("Solarium") == "YES")
+	{
+		Solarium = "Solarium";
+	}
+	else
+	{
+		Solarium = "";
+	}
+	// info Solarium;
+	// 	Gated_Development
+	if(product_res.get("Gated_Development") == "YES")
+	{
+		Gated_Development = "Gated Development";
+	}
+	else
+	{
+		Gated_Development = "";
+	}
+	// info Gated_Development;
+	// 	Disabled_access
+	if(product_res.get("Disabled_access") == "YES")
+	{
+		Disabled_access = "Disabled access";
+	}
+	else
+	{
+		Disabled_access = "";
+	}
+	// info Disabled_access;
+	Levels_In_Property = ifnull(product_res.get("Levels_In_Property"),"");
+	Aspect = ifnull(product_res.get("Aspect"),"");
+	Walk_to_restaurants = ifnull(product_res.get("Walk_to_restaurants"),"");
+	Walk_to_amenities = ifnull(product_res.get("Walk_to_amenities"),"");
+	Walk_to_shops = ifnull(product_res.get("Walk_to_shops"),"");
+//Prime
+	Property_View = ifnull(product_res.get("Property_View"),"");
+	//image
+	Photo_link_1 = ifnull(product_res.get("Photo_link_1"),"");
+	Photo_link_2 = ifnull(product_res.get("Photo_link_2"),"");
+	Photo_link_3 = ifnull(product_res.get("Photo_link_3"),"");
+
+	//location xml
+	location_map = {"latitude":latitude,"longitude":longitude};
+	location = "<location>";
+	for each  key in location_map.keys()
+	{
+		value = location_map.get(key);
+		location = location + "<" + key + ">" + value + "</" + key + ">";
+	}
+	location = location + "</location>";
+	
+	//surface_area xml
+	surface_area_map = {"built":built,"plot":plot};
+	surface_area = "<surface_area>";
+	for each  key in surface_area_map.keys()
+	{
+		value = surface_area_map.get(key);
+		surface_area = surface_area + "<" + key + ">" + value + "</" + key + ">";
+	}
+	surface_area = surface_area + "</surface_area>";
+	
+	//energy_rating xml
+	energy_rating_map = {"consumptions":consumptions,"emissions":emissions};
+	energy_rating = "<energy_rating>";
+	for each  key in energy_rating_map.keys()
+	{
+		value = energy_rating_map.get(key);
+		energy_rating = energy_rating + "<" + key + ">" + value + "</" + key + ">";
+	}
+	energy_rating = energy_rating + "</energy_rating>";
+	
+	//url xml
+	url_map = {"de":de,"en":en,"es":es,"nl":nl};
+	url = "<url>";
+	for each  key in url_map.keys()
+	{
+		value = url_map.get(key);
+		url = url + "<" + key + ">" + value + "</" + key + ">";
+	}
+	url = url + "</url>";
+	
+	//description xml
+	desc_map = {"de":desc_de,"en":desc_en,"es":desc_es,"nl":desc_nl};
+	description = "<desc>";
+	for each  key in desc_map.keys()
+	{
+		value = desc_map.get(key);
+		description = description + "<" + key + ">" + value + "</" + key + ">";
+	}
+	description = description + "</desc>";
+	
+	// feature xml
+	features_data = {"Swimming_Pool_type":Swimming_Pool_type,"garden":garden,"Parking":Parking,"Furnished":Furnished,"Fitted_kitchen":Fitted_kitchen,"Double_glazing":Double_glazing,"Views_of_Pool":Views_of_Pool,"Alarm":Alarm,"Sea_View":Sea_View,"Summer_kitchen":Summer_kitchen,"Separate_Accomodation":Separate_Accomodation,"Property_View":Property_View,"Broadband":Broadband,"Heating":Heating,"Open_Fire":Open_Fire,"Air_Con":Air_Con,"Lift":Lift,"Underbuild":Underbuild,"Solarium":Solarium,"Gated_Development":Gated_Development,"Disabled_access":Disabled_access,"Levels_In_Property":Levels_In_Property,"Aspect":Aspect,"Walk_to_restaurants":Walk_to_restaurants,"Walk_to_amenities":Walk_to_amenities,"Walk_to_shops":Walk_to_shops};
+	features = "<features>";
+	for each  key in features_data.keys()
+	{
+		value = features_data.get(key);
+		if(value != "")
+		{
+			features = features + "<feature>" + value + "</feature>";
+		}
+	}
+	features = features + "</features>";
+	// info features;
+	
+	//image xml
+	image_map = {"Photo_link_1":Photo_link_1,"Photo_link_2":Photo_link_2,"Photo_link_3":Photo_link_3};
+	images = "<images>";
+	id_num = 0;
+	for each  key in image_map.keys()
+	{
+		id_num = id_num + 1;
+		value = image_map.get(key);
+		if(value != "")
+		{
+			images = images + "<image id=" + id_num + ">" + "<url>" + value + "</url>" + "</image>";
+		}
+	}
+	images = images + "</images>";
+	part_ownership=0;
+	leasehold=0;
+	//property xml
+	property_data = {"id":id,"date":date,"ref":ref,"price":price,"currency":currency,"price_freq":price_freq,"part_ownership":part_ownership,"leasehold":leasehold,"new_build":new_build,"type":type,"town":town,"province":province,"country":country,"location_detail":location_detail,"bed":bed,"bath":bath,"pool":pool,"video":video,"virtual_tour_url":virtual_tour_url,"catastral":catastral};
+	property_data.put("id",id);
+	property_data.put("date",date);
+	property_data.put("ref",ref);
+	property_data.put("price",price);
+	property_data.put("currency",currency);
+	property_data.put("type",type);
+	property_data.put("town",town);
+	property_data.put("province",province);
+	property_data.put("beds",bed);
+	property_data.put("baths",bath);
+	property_data.put("pool",province);
+	property_data.put("province",province);
+	// // Function to convert map to XML
+	property = "<property>";
+	for each  key in property_data.keys()
+	{
+		value = property_data.get(key);
+		// 	info value;
+		property = property + "<" + key + ">" + value + "</" + key + ">";
+	}
+	property = property + location + energy_rating + surface_area + url + description + features + images + "</property>";
+	// info property;
+	// property_map.add(property);
+	product_list.add({"id": product_id, "xml_data": property , "Modified_Time": product_res.get("Modified_Time"), "Status": product_res.get("Status")});
+	if(product_list.size() == 50){
+		resp = invokeurl
+		[
+			url: "https://home-espana-xml-api.vercel.app/xml/properties"
+			type: POST
+			parameters: "["+product_list.toString()+"]"
+			headers: {"Content-Type": "application/json"}
+		];
+		product_list = list();
+	}
+}
+// //kyero xml
+// kyero_map = {"feed_version":3};
+// kyero = "<kyero>";
+// for each  key in kyero_map.keys()
+// {
+// 	value = kyero_map.get(key);
+// 	// 	info value;
+// 	kyero = kyero + "<" + key + ">" + value + "</" + key + ">";
+// }
+// kyero = kyero + "</kyero>";
+// info "<root>" + kyero + property_map + "</root>";
+if(product_list.size() > 0){
+	resp = invokeurl
+	[
+		url: "https://home-espana-xml-api.vercel.app/xml/properties"
+		type: POST
+		parameters: "["+product_list.toString()+"]"
+		headers: {"Content-Type": "application/json"}
+	];
+	product_list = list();
+}
+// info resp;
+info (now - start_time )/ 1000 + " Secs ";
