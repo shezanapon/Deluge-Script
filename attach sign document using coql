@@ -1,0 +1,23 @@
+data = crmAPIRequest.get("body");
+requests = data.get("requests");
+request_id = requests.get("request_id");
+if(request_id != null)
+{
+	download_doc = zoho.sign.downloadDocument(request_id);
+	queryMap = Map();
+	queryMap.put("select_query","select Sign_ID, Account_Name from Accounts where Sign_ID = '" + request_id + "' ");
+	accounts_resp = invokeurl
+	[
+		url :"https://www.zohoapis.com/crm/v2/coql"
+		type :POST
+		parameters:queryMap.toString()
+		connection:"zoho_crm_conn"
+	];
+	info {"res":accounts_resp};
+	for each  res in accounts_resp.get("data")
+	{
+		account_id = res.get("id");
+		info account_id;
+		info zoho.crm.attachFile("Accounts",account_id,download_doc);
+	}
+}
