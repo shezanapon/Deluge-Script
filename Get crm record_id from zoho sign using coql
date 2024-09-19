@@ -1,0 +1,32 @@
+crm_api_map = crmAPIRequest.toMap(); 
+body = crm_api_map.get("body"); 
+request_id = body.get("requests").get("request_id"); 
+info request_id; 
+notifications = body.get("notifications"); 
+info notifications; 
+if(notifications.get("operation_type") == "RequestSigningSuccess" && notifications.get("signing_order") == 0) 
+{
+	queryMap = Map(); 
+	queryMap.put("select_query","select Sign_ID, Account_Name from Accounts where Sign_ID = '" + request_id + "' "); 
+	accounts_resp = invokeurl 
+	[
+		url :"https://www.zohoapis.com/crm/v2/coql" 
+		type :POST 
+		parameters:queryMap.toString() 
+		connection:"zoho_crm_conn" 
+	]; 
+	// info accounts_resp; 
+	if(accounts_resp.get("data") != null && !accounts_resp.get("data").isEmpty()) 
+	{
+		account_id = accounts_resp.get("data").get(0).get("id"); 
+		account_name = accounts_resp.get("data").get(0).get("Account_Name"); 
+		primary_contact_email = 	accounts_resp.get("data").get(0).get("Primary_Contact_Email"); 
+		info zoho.crm.updateRecord("Accounts",account_id,{"NDA_Blueprint":"Signed NDA Received"}); 
+
+		
+		
+		signed_document = zoho.sign.downloadDocument(request_id); 
+		signed_document.setFileName("Signed NDA for " + account_name + ".pdf"); 
+		zoho.crm.attachFile("Accounts",account_id,signed_document); 
+	}
+}
