@@ -1,0 +1,78 @@
+// moduleName = "Leads"; 
+// recordId = "4731441000017139216";
+// attachments = zoho.crm.getRelatedRecords("Attachments", "Leads", recordId);
+// // info attachments;
+// fileobj1=null;
+// fileobj2=null;
+// num=0;
+// if(attachments.size() > 0)
+// {
+// 	for each attachment in attachments
+//     {
+// 		num=num+1;
+// 		info num;
+// 		attachmentId = attachment.get("id");
+// 		fileUrl = "https://www.zohoapis.com/crm/v2/" + moduleName + "/" + recordId + "/Attachments/" + attachmentId;
+// 		fileResponse = invokeurl
+// 		[
+// 			url : fileUrl
+// 			type : GET
+// 			connection : "zoho_crm_connection"
+// 		];
+// // 		info fileResponse;
+// 		if ( num ==1 ) 
+//         {
+// 			fileobj1=fileResponse;
+//         }
+// 		else 
+//         {
+// 			fileobj2=fileResponse;
+//         }
+//     }
+// }
+// info fileobj1;
+// info fileobj2;
+deal_id="4731441000014019389";
+fileobj1 = invokeurl
+[
+	url :"https://www.mathlearningcenter.org/sites/default/files/pdfs/BKPB-B_0312w_3.pdf"
+	type :GET
+];
+fileobj2 = invokeurl
+[
+	url :"https://icseindia.org/document/sample.pdf"
+	type :GET
+];
+info fileobj2;
+fileobj2.setParamName("files");
+output_settings = Map();
+output_settings.put("name","combined-document");
+input_options = Map();
+document_1 = Map();
+document_1.put("page_ranges","1,88");
+document_2 = Map();
+document_2.put("page_ranges","1,10");
+input_options.put("1",document_1);
+input_options.put("2",document_2);
+paramList = list();
+paramList.add({"paramName":"files","content":fileobj1});
+paramList.add({"paramName":"files1","content":fileobj2});
+paramList.add({"paramName":"output_settings","content":output_settings.toString(),"Content-Type":"application/json","stringPart":"true"});
+paramList.add({"paramName":"input_options","content":input_options.toString(),"Content-Type":"application/json","stringPart":"true"});
+combinepdf_response = invokeurl
+[
+	url :"https://www.zohoapis.com/writer/api/v1/documents/pdf/combine"
+	type :POST
+	files:paramList
+	connection:"zoho_writer_test"
+];
+info combinepdf_response;
+// if(combinepdf_response.get("status") == "inprogress")
+// {
+// 	status_check_url= combinepdf_response.get("status_check_url");
+// 	info zoho.crm.updateRecord("Deals", deal_id, {"Combine_pdf_response":status_check_url});
+// }
+
+
+
+
