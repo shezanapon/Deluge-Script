@@ -1,0 +1,32 @@
+meeting_res = zoho.crm.getRecordById("Events",meeting_id);
+Participants = meeting_res.get("Participants");
+meeting_name = ifnull(meeting_res.get("Event_Title"),"");
+meeting_description = ifnull(meeting_res.get("Description"),"");
+Start_DateTime = meeting_res.get("Start_DateTime");
+// end_time = meeting_res.get("End_DateTime");
+if(Participants != null && Start_DateTime != null)
+{
+	Start_DateTime = Start_DateTime.replaceAll("T"," ").toTime().toString("dd'th' MMMM,YYYY 'at' hh:mm a");
+	for each  participant in Participants
+	{
+		email = participant.get("Email");
+		name = participant.get("name");
+		// 		attendees_email.add(email);
+		subject = "Invitation: " + meeting_name + " on " + Start_DateTime;
+		emailBody = "<html><body>";
+		emailBody = emailBody + "<p>Dear " + name + ",</p>";
+		emailBody = emailBody + "<p>You are invited to attend the event: <strong>" + meeting_name + "</strong>.</p>";
+		emailBody = emailBody + "<p><strong>Event Details:</strong><br>" + meeting_description + "</p>";
+		emailBody = emailBody + "<p><strong>Event Date:</strong> " + Start_DateTime + "</p>";
+		emailBody = emailBody + "<p>Looking forward to your participation.</p>";
+		emailBody = emailBody + "<br><p>Regards,<br>[Win Win Hiring]</p>";
+		emailBody = emailBody + "</body></html>";
+		sendmail
+		[
+			from :zoho.adminuserid
+			to :email
+			subject :subject
+			message :emailBody
+		]
+	}
+}
