@@ -1,0 +1,17 @@
+access_token_resp = invokeurl
+[
+	url :"https://utility.v1.easy-pluginz.com/api/gettoken"
+	type :GET
+	connection:"zoho_crm_writer_conn"
+];
+response = Map();
+response.put("Content-Type","application/json");
+response.put("body",{"access_token":access_token_resp.get("accessToken")});
+// file_stream = invokeurl
+// [
+// 	url: "https://writer.zoho.eu/writer/api/v1/documents/pdf/combine/download/17abe12bf276ccccfcf2593ae10ba4092e441ce605e1ec177e888156d79f5d09e15e0affc79ef510577d626c54ec4ef0b814420553d629c1f6ff301b0bd75dd269576206878ff4c2d13cd20f5a64ff222f87ebd794473ec9d8b2e923f39d5f63d07c9a43e6d7a0568e6a25558fcea579129bc9e22d2bfa6a96fcc245902e0eaf"
+// 	type: GET
+// 	connection: "zoho_crm_writer_conn"
+// ];
+// zoho.crm.attachFile("Deals", 737776000000852297, file_stream);
+return {"crmAPIResponse":response};
