@@ -1,0 +1,88 @@
+deal_id = 737776000000770060;
+attachment_1 = null;
+attachment_2 = null;
+attachment_3 = null;
+attachment_4 = null;
+sample_Json = {"download_mail_merge":{{"mail_merge_template":{"name":"MoD Letter of Claim"},"output_format":"pdf","file_name":"Letter of Claim"}}};
+response = invokeurl
+[
+	url :"https://www.zohoapis.eu/crm/v6/Deals/" + deal_id + "/actions/download_mail_merge"
+	type :POST
+	parameters:sample_Json.toString()
+	connection:"zoho_crm_writer_conn"
+];
+// info response;
+attachment_1 = response;
+// info attachment_1;
+
+attachments = zoho.crm.getRelatedRecords("Attachments","Deals",deal_id);
+// info attachments;
+for each  attachment in attachments
+{
+	if(attachment.get("File_Name") == "hmrc.pdf")
+	{
+		file_Id = attachment.get("$file_id");
+		url = "https://zohoapis.eu/crm/v6/files?id=" + file_Id;
+		download_response = invokeurl
+			[
+				url :url
+				type :GET
+				connection:"zoho_crm_conn"
+			];
+		// 				info download_response;
+		attachment_2 = download_response;
+	}
+	if(attachment.get("File_Name") == "MoD Stage - Medical Report Requested.pdf")
+	{
+		file_Id = attachment.get("$file_id");
+		url = "https://zohoapis.eu/crm/v6/files?id=" + file_Id;
+		download_response = invokeurl
+		[
+			url :url
+			type :GET
+			connection:"zoho_crm_conn"
+		];
+		// 				info download_response;
+		attachment_3 = download_response;
+	}
+	if(attachment.get("File_Name") == "MoD Stage - Medical Report Requested.pdf")
+	{
+		file_Id = attachment.get("$file_id");
+		url = "https://zohoapis.eu/crm/v6/files?id=" + file_Id;
+		download_response = invokeurl
+		[
+			url :url
+			type :GET
+			connection:"zoho_crm_conn"
+		];
+		// 				info download_response;
+		attachment_4 = download_response;
+	}
+	}
+// 	info attachment_1;
+// 	info attachment_2;
+// 	info attachment_3;
+// 	info attachment_4;
+	if(attachment_1 != null && attachment_2 != null && attachment_3 != null && attachment_4 != null)
+	{
+		emailBody = "<p>Please find attached the following documents for our client in relation to his MoD NIHL Claim:</p>";
+		emailBody = emailBody + "<ol>";
+		emailBody = emailBody + "<li>Letter of Claim</li>";
+		emailBody = emailBody + "<li>MoD Mandate</li>";
+		emailBody = emailBody + "<li>Identification</li>";
+		emailBody = emailBody + "<li>No Previous Claim Mandate</li>";
+		emailBody = emailBody + "</ol>";
+		emailBody = emailBody + "<br />";
+		emailBody = emailBody + "<p>We look forward to hearing from you in due course.</p>";
+		attachment_pdf_list={attachment_1,attachment_2,attachment_3,attachment_4};
+
+		sendmail
+		[
+			from: zoho.adminuserid
+			to: "shezanmahbub94@gmail.com"
+			subject: "NIHL - Case Ref – Surname (e.g. NIHL - 102752.001 – Honey)"
+			message: emailBody
+			attachments: file:attachment_pdf_list
+		]
+	}
+
