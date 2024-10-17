@@ -1,0 +1,97 @@
+// deal_id = 737776000000890361;
+fileobj1 = null;
+fileobj2 = null;
+fileobj3 = null;
+sample_Json = {"download_mail_merge":{{"mail_merge_template":{"name":"HMRC Request"},"output_format":"pdf","file_name":"HMRC Request"}}};
+response = invokeurl
+[
+	url :"https://www.zohoapis.eu/crm/v6/Deals/" + deal_id + "/actions/download_mail_merge"
+	type :POST
+	parameters:sample_Json.toString()
+	connection:"zoho_crm_writer_conn"
+];
+// info response;
+fileobj1 = response;
+doc_res = zoho.crm.getRelatedRecords("ZohoSign_Documents","Deals",deal_id);
+if(doc_res != null)
+{
+	for each  res in doc_res
+	{
+		if(res.get("Name") == "MoD E-Sign.pdf")
+		{
+			sign_module_id = res.get("id");
+			attachments = zoho.crm.getRelatedRecords("Attachments","zohosign__ZohoSign_Documents",sign_module_id);
+			for each  attachment in attachments
+			{
+				if(attachment.get("File_Name") == "MoD E-Sign - signed.pdf")
+				{
+					file_Id = attachment.get("$file_id");
+					url = "https://zohoapis.eu/crm/v6/files?id=" + file_Id;
+					download_response = invokeurl
+					[
+						url :url
+						type :GET
+						connection:"zoho_crm_conn"
+					];
+					// 				info download_response;
+					fileobj2 = download_response;
+				}
+				if(attachment.get("File_Name") == "MoD E-Sign.pdf-completion_certificate.pdf")
+				{
+					file_Id = attachment.get("$file_id");
+					url = "https://zohoapis.eu/crm/v6/files?id=" + file_Id;
+					download_response = invokeurl
+					[
+						url :url
+						type :GET
+						connection:"zoho_crm_conn"
+					];
+					// 				info download_response;
+					fileobj3 = download_response;
+				}
+			}
+			info fileobj1;
+			info fileobj2;
+			info fileobj3;
+			if(fileobj1 != null && fileobj2 != null && fileobj3 != null)
+			{
+				fileobj2.setParamName("files");
+				fileobj3.setParamName("files");
+				output_settings = Map();
+				output_settings.put("name","combined-document");
+				input_options = Map();
+				document_1 = Map();
+				// 		document_1.put("page_ranges","1");
+				document_2 = Map();
+				document_2.put("page_ranges","27");
+				document_3 = Map();
+				// 		document_3.put("page_ranges","1");
+				input_options.put("1",document_1);
+				input_options.put("2",document_2);
+				input_options.put("3",document_3);
+				paramList = list();
+				paramList.add({"paramName":"files","content":fileobj1});
+				paramList.add({"paramName":"files1","content":fileobj2});
+				paramList.add({"paramName":"files2","content":fileobj3});
+				paramList.add({"paramName":"output_settings","content":output_settings.toString(),"Content-Type":"application/json","stringPart":"true"});
+				paramList.add({"paramName":"input_options","content":input_options.toString(),"Content-Type":"application/json","stringPart":"true"});
+				// 		info paramList;
+				combinepdf_response = invokeurl
+				[
+					url :"https://www.zohoapis.eu/writer/api/v1/documents/pdf/combine"
+					type :POST
+					files:paramList
+					connection:"zoho_crm_writer_conn"
+				];
+				info combinepdf_response;
+				if(combinepdf_response.get("status") == "inprogress")
+				{
+					status_check_url = combinepdf_response.get("status_check_url");
+					return status_check_url;
+					// 			info zoho.crm.updateRecord("Deals", deal_id, {"Combine_pdf_response":status_check_url});
+				}
+			}
+		}
+	}
+}
+return deal_id;
