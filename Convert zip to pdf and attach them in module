@@ -1,0 +1,30 @@
+void automation.shezan_test()
+{
+acc_id = 4728790000019381150;
+zips = zoho.crm.getRelatedRecords("Attachments","Accounts",acc_id);
+if ( zips != null ) 
+{
+	for each zip in zips
+{
+	file_name= zip.get("File_Name");
+	if ( file_name.right(4) == ".zip" ) 
+    {
+		file_id= zip.get("id");
+		response = invokeurl
+		[
+			url: "https://www.zohoapis.com/crm/v7/Accounts/"+acc_id+"/Attachments/"+file_id
+			type: GET
+			connection:"zoho_crm_conn"
+		];
+		pdf_files = response.extract();
+		info pdf_files;
+		for each file_key in pdf_files.keys() {
+			info file_key;
+			info pdf_files.get(file_key);
+			info zoho.crm.attachFile("Accounts", acc_id, pdf_files.get(file_key));		
+		}
+		
+    }
+}
+}
+}
