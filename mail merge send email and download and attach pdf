@@ -1,0 +1,35 @@
+void automation.test()
+{
+id = 6489754000000737796;
+// 	res=zoho.crm.getRecordById("ILST_Session_Notes", id);
+// 	info res;
+param = {"send_mail_merge":{{"mail_merge_template":{"name":"ILST Session Notes"},"to_address":{{"type":"email","value":"shezanmahbub94@gmail.com"}},"subject":"Hi there","type":"attachment","attachment_name":"testdocument","message":"Big Deal"}}};
+merge_mail = invokeurl
+[
+	url :"https://www.zohoapis.com/crm/v7/ILST_Session_Notes/" + id + "/actions/send_mail_merge"
+	type :POST
+	parameters:param.toString()
+	connection:"mail_merge_conn"
+];
+info merge_mail;
+download_param={
+  "download_mail_merge": [
+    {
+      "mail_merge_template": {
+        "name": "ILST Session Notes"
+      },
+      "output_format": "pdf",
+      "file_name": "ILST_Session_Notes"
+    }
+  ]
+};
+download_pdf=invokeurl
+[
+	url :"https://www.zohoapis.com/crm/v7/ILST_Session_Notes/" + id + "/actions/download_mail_merge"
+	type :POST
+	parameters:download_param.toString()
+	connection:"mail_merge_conn"
+];
+info download_pdf;
+info zoho.crm.attachFile("ILST_Session_Notes", id, download_pdf);
+}
