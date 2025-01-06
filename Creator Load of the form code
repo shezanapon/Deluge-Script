@@ -1,0 +1,27 @@
+session_res = zoho.crm.getRecordById("Workshop_Sessions",input.Session_ID.toLong(),Map(),"zohocrm_connection");
+capacity = ifnull(session_res.get("Student_Limit"),0);
+total_enrolled = ifnull(session_res.get("Total_Enrolled"),0);
+if(total_enrolled >= capacity)
+{
+	alert "I'm sorry, this workshop is full, please contact the centre.";
+}
+timeZone = "-07:00";
+start_Time = ifnull(session_res.get("Start_Date_Time"),"");
+just_start_date = start_Time.getPrefix("T").toString("yyyy-MM-dd");
+just_start_Time = start_Time.getSuffix("T").getprefix("+");
+start_time_Reformat = just_start_date + " " + just_start_Time;
+info start_time_Reformat;
+end_Time = ifnull(session_res.get("End_Date_Time"),"");
+just_end_date = end_Time.getPrefix("T").toString("yyyy-MM-dd");
+just_end_Time = end_Time.getSuffix("T").getprefix("+");
+end_time_Reformat = just_end_date + " " + just_end_Time;
+workshop_Name = ifnull(session_res.get("Name"),"");
+input.Workshop_Name = workshop_Name;
+if(start_Time != "")
+{
+	input.Start_Time = start_time_Reformat;
+}
+if(end_Time != "")
+{
+	input.End_Time = end_time_Reformat;end_time_Reformat
+}
