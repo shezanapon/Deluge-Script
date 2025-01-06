@@ -1,0 +1,64 @@
+void automation.Update_record_name_in_Creator(Int id)
+{
+res = zoho.crm.getRecordById("Workshop_Enrolments",id);
+session = res.get("Workshop_Session");
+Previous_Session_ID = res.get("Previous_Session_ID");
+if(session != null)
+{
+	session_id = session.get("id");
+	session_related_list = zoho.crm.getRelatedRecords("Workshop_Enrolment","Workshop_Sessions",session_id);
+	enroll_num = session_related_list.size();
+	param_map = {"Total_Enrolled":enroll_num};
+	info zoho.crm.updateRecord("Workshop_Sessions",session_id,param_map);
+	// 	res = zoho.crm.getRecordById("Workshop_Enrolments",id);
+	// 	session = res.get("Workshop_Session");
+	// 	previous_id_map={"Previous_Session_ID":res.get("Previous_Session_ID")};
+	// 	info zoho.crm.updateRecord("Workshop_Enrolments", id, previous_id_map);
+	if(Previous_Session_ID != null)
+	{
+		session_related_list = zoho.crm.getRelatedRecords("Workshop_Enrolment","Workshop_Sessions",Previous_Session_ID);
+		enroll_num = session_related_list.size();
+		param_map = {"Total_Enrolled":enroll_num};
+		info zoho.crm.updateRecord("Workshop_Sessions",Previous_Session_ID,param_map);
+		updated_res = zoho.crm.getRecordById("Workshop_Enrolments",id);
+		updated_session = res.get("Workshop_Session");
+		updated_session_id = updated_session.get("id");
+		previous_id_map = {"Previous_Session_ID":updated_session_id};
+		info zoho.crm.updateRecord("Workshop_Enrolments",id,previous_id_map);
+	}
+	else
+	{
+		updated_res = zoho.crm.getRecordById("Workshop_Enrolments",id);
+		updated_session = res.get("Workshop_Session");
+		updated_session_id = updated_session.get("id");
+		previous_id_map = {"Previous_Session_ID":updated_session_id};
+		info zoho.crm.updateRecord("Workshop_Enrolments",id,previous_id_map);
+	}
+}
+else if(session == null && Previous_Session_ID != null)
+{
+	session_related_list = zoho.crm.getRelatedRecords("Workshop_Enrolment","Workshop_Sessions",Previous_Session_ID);
+	enroll_num = session_related_list.size();
+	param_map = {"Total_Enrolled":enroll_num};
+	info zoho.crm.updateRecord("Workshop_Sessions",Previous_Session_ID,param_map);
+}
+// enrollment_res = zoho.crm.getRecordById("Workshop_Enrolments",id);
+session_id = session.get("id");
+if(session_id != null)
+{
+	session_res = zoho.crm.getRecordById("Workshop_Sessions",session_id);
+	name = session_res.get("Name");
+	total_enrolled = ifnull(session_res.get("Total_Enrolled"),0);
+	capacity = ifnull(session_res.get("Student_Limit"),0);
+	creator_session_id = session_res.get("Creator_Session_ID");
+	if(creator_session_id != null)
+	{
+		param_map = {"Workshop_Name":name + " - " + "(" + total_enrolled + "/" + capacity + ")"};
+		// 	info creator_session_id;
+		// 		creator_session_res = zoho.creator.getRecordById("brainworks","session-details","All_Session_Details",creator_session_id,"zoho_creator_conn");
+		update_res = zoho.creator.updateRecord("brainworks","session-details","All_Session_Details",creator_session_id,param_map,Map(),"zoho_creator_conn");
+		// 			info creator_session_res;
+		// 			info update_res;
+	}
+}
+}
