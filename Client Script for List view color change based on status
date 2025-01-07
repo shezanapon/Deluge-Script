@@ -1,0 +1,21 @@
+ZDK.Page.getList().style(
+    {
+        record: { backgroundColor: '#affac9' },
+        field: { Lead_Status: { backgroundColor: '#affac9', fonegroundColor: "#008000", fontWeight: 'bold' } }
+    },
+    "((Lead_Status:equals:LEAD-Qualified))"
+);
+ZDK.Page.getList().style(
+    {
+        record: { backgroundColor: '#fab1b1' },
+        field: { Lead_Status: {backgroundColor: '#fab1b1',fonegroundColor: "#008000", fontWeight: 'bold' } }
+    },
+    "((Lead_Status:equals:Junk Lead)or(Lead_Status:equals:Not Qualified))"
+);
+ZDK.Page.getList().style(
+    {
+        record: { backgroundColor: '#f4f7b7' },
+        field: { Lead_Status: {backgroundColor: '#f4f7b7',fonegroundColor: "#008000", fontWeight: 'bold' } }
+    },
+    "((Lead_Status:equals:Contacted))"
+);
