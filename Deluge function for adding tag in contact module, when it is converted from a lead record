@@ -1,0 +1,35 @@
+void automation.Add_tag_test_by_shezan(Int contact_id)
+{
+leads_rec = zoho.crm.getRecords("Leads",1,200,{"converted":true});
+	info leads_rec;
+for each  record in leads_rec
+{
+	converted_rec = record.get("$converted_detail");
+	// 		info converted_rec;
+	converted_contact_id = converted_rec.get("contact");
+	// 		info converted_contact_id;
+	if(converted_contact_id == contact_id)
+	{
+		lead_id = record.get("id");
+		info converted_rec;
+		info {"lead":record.get("id")};
+		lead_res = zoho.crm.getRecordById("Leads",lead_id,{"converted": true});
+		info {"lead":lead_res};
+		tags_list = lead_res.get("Tag");
+		info tags_list.size();
+		if(tags_list.size() > 0)
+		{
+			new_tags_list = List();
+			for each  tag in tags_list
+			{
+				name = tag.get("name");
+				tag_map = {"name":name};
+				new_tags_list.add(tag_map);
+			}
+			param_map = {"Tag":new_tags_list};
+			contact_update = zoho.crm.updateRecord("Contacts",contact_id,param_map);
+			info contact_update;
+		}
+	}
+}
+}
