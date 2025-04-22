@@ -1,0 +1,21 @@
+string standalone.Search_invoice_by_date_range(String start_date,String end_date)
+{
+sendmail
+[
+	from :zoho.adminuserid
+	to :"shezanmahbub94@gmail.com"
+	subject :"Check the details " + now
+	message :{"start_date":start_date,"end_date":end_date}
+]
+headers_data = Map();
+headers_data.put("Authorization","Zoho-oauthtoken 1000.41d9xxxxxxxxxxxxxxxxxxxxxxxxc2d1.8fccxxxxxxxxxxxxxxxxxxxxxxxx125f");
+response = invokeurl
+[
+	url :"https://www.zohoapis.com/books/v3/invoices?date_start=" + start_date + "&&date_end=" + end_date
+	type :GET
+	headers:headers_data
+	connection:"invoice_conn"
+];
+invoices_list = ifnull(response.get("invoices"),list());
+return {invoices_list};
+}
