@@ -1,0 +1,218 @@
+string standalone.shezan_dev_cronjob()
+{
+unique_key = "some_unique_key";
+set_value = null;
+if(set_value == null)
+{
+	page_no = ifnull(ifnull(geturl("https://api.easy-pluginz.com/admin/v2/utils/getincrementalvalue?key=" + unique_key),Map()).get("data"),"1").toLong();
+}
+else
+{
+	page_no = ifnull(ifnull(geturl("https://api.easy-pluginz.com/admin/v2/utils/getincrementalvalue?key=" + unique_key + "&value=" + set_value),Map()).get("data"),"1").toLong();
+}
+info page_no;
+candidates_res = zoho.crm.getRecords("Candidates",page_no,5);
+recruit_users = invokeurl
+[
+	url :"https://recruit.zoho.com/recruit/v2/users?type=AllUsers"
+	type :GET
+	connection:"recruit_connection"
+];
+user_details = recruit_users.get("users");
+for each  candidate in candidates_res
+{
+	candidate_id = candidate.get("id");
+	info candidate_id;
+	id = candidate.get("Candidate_idd");
+	info id;
+	// candidate_id = 5918590000003362437;
+	// Candidate_res = zoho.crm.getRecordById("Candidates",candidate_id);
+	// id = Candidate_res.get("Candidate_idd");
+	// info id;
+	// 	info recruit_users;
+	if(id != null)
+	{
+		recruit_id = id.getSuffix("Zrecruit_");
+		// no need toLong here because you are using it in URL only
+		recruit_res = zoho.recruit.getRecordById("Candidates",recruit_id,"recruit_connection");
+		creation_date = recruit_res.get("Created Time");
+		record_map = {"Created_Date_in_recruit":creation_date};
+		update_crm_record = zoho.crm.updateRecord("Candidates",candidate_id,record_map);
+		related_notes_list = invokeurl
+		[
+			url :"https://recruit.zoho.com/recruit/v2/Candidates/" + recruit_id + "/Notes"
+			type :GET
+			connection:"recruit_connection"
+		];
+		// 	info related_notes_list;
+		related_attachments_list = invokeurl
+		[
+			url :"https://recruit.zoho.com/recruit/v2/Candidates/" + recruit_id + "/Attachments"
+			type :GET
+			connection:"recruit_connection"
+		];
+		info related_attachments_list;
+		note_data_list = related_notes_list.get("data");
+		// // 	✅ get the data array properly
+		// 	info note_data_list;
+		if(note_data_list != null && note_data_list.size() > 0)
+		{
+			for each  note in note_data_list
+			{
+				Note_Title = ifnull(note.get("Note_Title"),"");
+				note_content = note.get("Note_Content");
+				user_name = note.get("Created_By").get("name");
+				final_note_content = "";
+				if(note_content != null)
+				{
+					user_ids = list();
+					remaining_content = note_content;
+					// Start with full note
+					// First Step: split by "crm"
+					crm_parts = note_content.toList("crm");
+					for each  part in crm_parts
+					{
+						if(part.indexOf("user#") != -1)
+						{
+							temp = part.getSuffix("user#");
+							if(temp != null)
+							{
+								id = temp.getPrefix("#");
+								if(id != null && id.isNumber())
+								{
+									user_ids.add(id);
+								}
+							}
+						}
+						else
+						{
+							remaining_content = part.trim();
+						}
+					}
+					final_content = note_content;
+					// Start with original
+					info user_ids;
+					if(user_ids != {} && user_ids.length() > 0)
+					{
+						for each  id in user_ids
+						{
+							for each  user in user_details
+							{
+								if(user.get("id") == id)
+								{
+									full_name = user.get("full_name");
+									if(full_name != null)
+									{
+										search_text = "[user#" + id + "#";
+										index_start = final_content.indexOf(search_text);
+										if(index_start != -1)
+										{
+											index_end = final_content.indexOf("]crm",index_start);
+											if(index_end != -1)
+											{
+												part_before = final_content.subString(0,index_start);
+												part_after = final_content.subString(index_end + 4,final_content.length());
+												final_content = part_before + " " + full_name + " " + part_after;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					// Step 1: Remove \n
+					line_parts = final_content.toList("\n");
+					final_content_cleaned = "";
+					for each  p in line_parts
+					{
+						final_content_cleaned = final_content_cleaned + p.trim() + " ";
+					}
+					final_content_cleaned = final_content_cleaned.trim();
+					// Step 2: Remove leftover "crm" words
+					words_list = final_content_cleaned.toList(" ");
+					// Split into words
+					final_words = list();
+					for each  word in words_list
+					{
+						if(word != "crm" && word != "")
+						{
+							// ignore empty and crm
+							final_words.add(word);
+						}
+					}
+					// Step 3: Join the final cleaned words
+					final_result = "";
+					for each  w in final_words
+					{
+						final_result = final_result + w + " ";
+					}
+					final_result = final_result.trim();
+					if(user_name != null)
+					{
+						final_note_content = user_name + " " + "posted a note with the title" + " " + Note_Title + "---" + final_result;
+					}
+					else
+					{
+						final_note_content = final_result;
+					}
+					// Output
+					info "Final Main Content: " + final_note_content;
+				}
+				new_note_map = {"Note_Title":Note_Title,"$se_module":"Candidates","Parent_Id":{"id":candidate_id}};
+				given_owner = ifnull(note.get("note_owner"),"");
+				//             Note_Content = given_owner + ": " + Note_Content;
+				new_note_map.put("Note_Content",final_note_content);
+				note_create_resp = zoho.crm.createRecord("Notes",new_note_map);
+				note_id = note_create_resp.get("id");
+				note_related_attachments_list = ifnull(note.get("note_related_attachments_list"),List());
+				info note_related_attachments_list;
+				if(note_related_attachments_list.size() > 0)
+				{
+					for each  note_attach in note_related_attachments_list
+					{
+						file = invokeurl
+						[
+							url :note_attach
+							type :GET
+						];
+						resp = zoho.crm.attachFile("Notes",note_id,file);
+					}
+				}
+			}
+		}
+		related_attachments_downloadable_links_list = related_attachments_list.get("data");
+		if(related_attachments_downloadable_links_list != null && related_attachments_downloadable_links_list.size() > 0)
+		{
+			for each  file_url in related_attachments_downloadable_links_list
+			{
+				// 		info file_url;
+				file_id = file_url.get("id");
+				info file_id;
+				if(file_id != null)
+				{
+					download_file = invokeurl
+					[
+						url :"https://recruit.zoho.com/recruit/v2/Candidates/" + recruit_id + "/Attachments/" + file_id
+						type :GET
+						connection:"recruit_connection"
+					];
+					info download_file;
+					attach_response = zoho.crm.attachFile("Candidates",candidate_id,download_file);
+					info attach_response;
+				}
+			}
+		}
+	}
+}
+if(candidates_res.length() < 5)
+{
+	sendmail
+	[
+		from :zoho.adminuserid
+		to :"shezanmahbub94@gmail.com"
+		subject :"imidiately stop cron job" + page_no
+		message :"imidiately stop cron job"
+	]
+}
+return "";
+}
