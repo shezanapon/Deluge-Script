@@ -1,0 +1,40 @@
+void automation.AI_Test()
+{
+headers = Map();
+headers.put("Authorization","Bearer secret-key");
+// Your API Key
+headers.put("Content-Type","application/json");
+headers.put("OpenAI-Organization","org-Nfi083oGILzcrp1PHy26P3MU");
+// optional, if OpenAI tells you
+// 	headers.put("OpenAI-Project", "YOUR_PROJECT_ID"); 
+lead_map = {"company_name":"Tesla, Inc","email":"press@tesla.com","phone":"(877) 798-3752","contact_name":"elon musk"};
+info lead_map.get("Company Name");
+first_part = "Company Name=" + lead_map.get("company_name") + ", Website=" + lead_map.get("email") + ", Phone Number=" + lead_map.get("phone") + ", using this information search in the web and return a structured JSON response containing: Company Information , Contact Information , Qualification Score (“Hot Lead”, “Cold Lead”, “No Data”) , Qualification Advice (multi-line detailed advice) , give all the objects of Expected JSON Response Example:";
+second_part = {"first_name":"John","last_name":"Doe","email":"john.doe@company.com","phone":"+31 6 12345678","account_name":"Company ABC","visiting_street":"Keizersgracht","visiting_house_number":"123","visiting_code":"1015 CJ","visiting_city":"Amsterdam","visiting_province":"Noord-Holland","visiting_country":"Netherlands","website":"https://companyabc.nl","linkedin":"https://linkedin.com/company/companyabc","industry":"Marketing & Advertising","number_of_employees":45,"annual_revenue":4500000,"kvk_number":"12345678","vat_number":"NL001234567B01","legal_form":"BV","recent_news":"Expanded into Germany after €2M funding round.","qualification":"Hot Lead","qualification_advice":"Rapid expansion and strong funding; highly recommended for immediate follow-up."};
+prompt_text = first_part + second_part;
+info prompt_text;
+// Escape any quotes
+prompt_text_escaped = prompt_text.replaceAll("\"","\\\"");
+// Use gpt-3.5-turbo instead of gpt-4
+json_body = "{\"model\": \"gpt-4-0125-preview\", \"messages\": [{\"role\": \"user\", \"content\": \"" + prompt_text_escaped + "\"}]}";
+info "Request Body: " + json_body;
+response = postUrl("https://api.openai.com/v1/chat/completions",json_body,headers);
+// info response;
+// Step 1: Parse full response to map
+response_map = response.toMap();
+// Step 2: Navigate into choices → message → content
+choices = response_map.get("choices");
+first_choice = choices.get(0);
+message = first_choice.get("message");
+raw_content = message.get("content");
+// Step 3: Clean the markdown formatting ```json ... ```
+cleaned_json = raw_content.replaceAll("```json","").replaceAll("```","").trim();
+// Step 4: Convert JSON string to map
+parsed_result = cleaned_json.toMap();
+info parsed_result;
+// Step 5: Now you can access any field from the parsed map
+info parsed_result.get("account_name");
+// e.g., Tesla, Inc
+info parsed_result.get("email");
+// e.g., press@tesla.com
+}
