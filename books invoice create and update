@@ -1,0 +1,188 @@
+void automation.create_books_invoice(String pb_log_ids_str)
+{
+pb_log_ids = pb_log_ids_str.toList("|||");
+for each  pb_log_id in pb_log_ids
+{
+	log_resp = zoho.crm.getRecordById("Poolbrain_Logs",pb_log_id);
+	upd_status = "Error";
+	response = Map();
+	parameters_data = Map();
+	PoolBrain_JSON = log_resp.get("PoolBrain_JSON").toMap();
+	poolbrain_RecordID = PoolBrain_JSON.get("RecordID");
+	TaxType = PoolBrain_JSON.get("TaxType");
+	TaxAmount = PoolBrain_JSON.get("TaxAmount");
+	Discount = PoolBrain_JSON.get("Discount");
+	Subtotal = PoolBrain_JSON.get("Subtotal");
+	DueDate = PoolBrain_JSON.get("DueDate").toList("T").get(0);
+	CreatedDate = PoolBrain_JSON.get("CreatedDate");
+	////////////// analyze the due date terms /////////////////////
+	terms_mapping = {"3":"Net 3","7":"Net 7","14":"Net 14","15":"Net 15","30":"Net 30","45":"Net 45","60":"Net 60","90":"Net 90"};
+	payment_terms_label = terms_mapping.get(CreatedDate.daysBetween(DueDate).toString());
+	if(payment_terms_label == null)
+	{
+		payment_terms_label = "Due On Receipt";
+	}
+	///////////////////////////////////////////////////////////////
+	headers_map = {"accept":"application/json","ACCESS-KEY":"c0b51ac98389"};
+	// 	info "https://prodapi.poolbrain.com/invoice_list_detail?invoiceId=" + poolbrain_RecordID;
+	fetch_inv_line_items = invokeurl
+	[
+		url :"https://prodapi.poolbrain.com/invoice_list_detail?invoiceId=" + poolbrain_RecordID
+		type :GET
+		headers:headers_map
+	];
+	response.put("message",fetch_inv_line_items.get("message"));
+	if(fetch_inv_line_items.get("status") == "200" && fetch_inv_line_items.get("data") != null && fetch_inv_line_items.get("data").size() > 0)
+	{
+		inv_fetched_lineitems_data = ifnull(fetch_inv_line_items.get("data"),Map());
+		// get customer from CRM
+		CustomerID = ifnull(PoolBrain_JSON.get("CustomerID"),"");
+		fetch_contact_in_crm = zoho.crm.searchRecords("Contacts","PoolBrain_ID:equals:" + CustomerID);
+		if(fetch_contact_in_crm.size() > 0)
+		{
+			contact_record = fetch_contact_in_crm.get(0);
+			contact_id = contact_record.get("id");
+			Zoho_Books_Contact_ID = ifnull(contact_record.get("Zoho_Books_Contact_ID"),"");
+			if(Zoho_Books_Contact_ID == "")
+			{
+				response = invokeurl
+				[
+					url :"https://www.zohoapis.com/books/v3/crm/contact/" + contact_id + "/import?organization_id=716248334"
+					type :POST
+					connection:"zoho_crm_oauth_2"
+				];
+				if(response.get("code") == 0)
+				{
+					Zoho_Books_Contact_ID = ifnull(ifnull(response.get("data"),Map()).get("customer_id"),"");
+					zoho.crm.updateRecord("Contacts",contact_id,{"Zoho_Books_Contact_ID":Zoho_Books_Contact_ID});
+				}
+			}
+			// now I have books customer id
+			invoice_number = ifnull(PoolBrain_JSON.get("InvoiceNumber"),"");
+			date_value = ifnull(PoolBrain_JSON.get("CreatedDate"),now.toString("yyyy-MM-dd"));
+			customer_id = Zoho_Books_Contact_ID;
+			status = "draft";
+			// seach if the invoice exists already
+			books_inv_search_resp = zoho.books.getRecords("Invoices","716248334","invoice_number=" + invoice_number,"zoho_crm_oauth_2");
+			books_inv_search_resp_list = ifnull(books_inv_search_resp.get("invoices"),List());
+			invoice_id = "";
+			if(books_inv_search_resp_list.size() > 0)
+			{
+				// inv exists
+				invoice_id = books_inv_search_resp_list.get(0).get("invoice_id");
+			}
+			// for line items
+			new_items_list = List();
+			for each  item in inv_fetched_lineitems_data.get("ProductDetails")
+			{
+				poolbrain_item_id = item.get("ProductID");
+				books_item_id = "";
+				books_search_resp = zoho.books.getRecords("Items","716248334","cf_poolbrain_id=" + poolbrain_item_id,"zoho_crm_oauth_2");
+				// 	info books_search_resp;
+				if(books_search_resp.get("code") == 0)
+				{
+					books_items = ifnull(books_search_resp.get("items"),List());
+					if(books_items.size() > 0)
+					{
+						books_item = ifnull(books_items.get(0),Map());
+						books_item_id = ifnull(books_item.get("item_id"),"");
+					}
+				}
+				// item map
+				new_line_item_map = Map();
+				if(books_item_id != "")
+				{
+					new_line_item_map.put("item_id",books_item_id);
+				}
+				else
+				{
+					crm_item_search = zoho.crm.searchRecords("Products","Product_Poolbrain_ID:equals:" + poolbrain_item_id);
+					if(crm_item_search.size() > 0)
+					{
+						crm_item = crm_item_search.get(0);
+						name = crm_item.get("Product_Name");
+						new_line_item_map.put("name",name);
+					}
+					else
+					{
+						new_line_item_map.put("name",poolbrain_item_id);
+					}
+				}
+				new_line_item_map.put("quantity",item.get("Qty").toLong());
+				new_line_item_map.put("rate",item.get("Price").toDecimal());
+				// add code for tax and discount
+				Taxable = item.get("Taxable").toDecimal();
+				if(Taxable > 0)
+				{
+					new_line_item_map.put("tax_id","2270933000002145017");
+				}
+				else
+				{
+					new_line_item_map.put("tax_exemption_id","2270933000003239162");
+				}
+				new_items_list.add(new_line_item_map);
+			}
+			line_items = new_items_list;
+			// poolbrain id into custom field
+			custom_fields = List();
+			custom_field_map = {"api_name":"cf_poolbrain_invoice_id","value":poolbrain_RecordID};
+			custom_fields.add(custom_field_map);
+			discount = "";
+			invoice_map = {"invoice_number":invoice_number,"date":date_value,"customer_id":customer_id,"status":status,"line_items":line_items,"custom_fields":custom_fields,"reason":"updated based on - " + pb_log_id,"due_date":DueDate,"payment_terms_label":payment_terms_label};
+			if(Discount > 0)
+			{
+				invoice_map.put("discount",Discount.toDecimal());
+				invoice_map.put("discount_type","entity_level");
+				invoice_map.put("discount_account_name","Discount");
+			}
+			parameters_data = invoice_map;
+			// 			info invoice_map;
+			if(invoice_id == "" && !new_items_list.isEmpty())
+			{
+				// create invoice
+				response = invokeurl
+				[
+					url :"https://www.zohoapis.com/books/v3/invoices?organization_id=716248334&ignore_auto_number_generation=true"
+					type :POST
+					parameters:parameters_data.toString()
+					connection:"zoho_crm_oauth_2"
+					content-type:"application/json"
+				];
+				invoice_id = response.get("invoice").get("invoice_id");
+			}
+			else
+			{
+				// update invoice
+				response = invokeurl
+				[
+					url :"https://www.zohoapis.com/books/v3/invoices/" + invoice_id + "?organization_id=716248334"
+					type :PUT
+					parameters:parameters_data.toString()
+					connection:"zoho_crm_oauth_2"
+					content-type:"application/json"
+				];
+				// 				info response;
+			}
+			if(response != null && response.get("invoice") != null && Subtotal > 0)
+			{
+				upd_status = "Success";
+				if(PoolBrain_JSON.get("InvoiceStatus") != "Upcoming")
+				{
+					// Maark Invoice as Sent
+					post_map = Map();
+					sent_response = invokeurl
+					[
+						url :"https://www.zohoapis.com/books/v3/invoices/" + invoice_id + "/status/sent?organization_id=716248334"
+						type :POST
+						parameters:post_map.toString()
+						connection:"zoho_crm_oauth_2"
+						content-type:"application/json"
+					];
+				}
+				// 				info sent_response;
+			}
+		}
+	}
+	zoho.crm.updateRecord("Poolbrain_Logs",pb_log_id,{"CRM_Json":parameters_data,"CRM_Update_Resp":response,"Status_Message":ifnull(response.get("message"),"Updated in Books Successfully"),"Status":upd_status,"CRM_Module_Name":"Invoice","CRM_Module_ID":ifnull(response.get("invoice"),Map()).get("invoice_id") + "","CRM_Record_URL":"https://books.poolcarespecialists.com/app/716248334#/invoices/" + ifnull(response.get("invoice"),Map()).get("invoice_id")});
+}
+}
