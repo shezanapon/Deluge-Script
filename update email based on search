@@ -1,0 +1,61 @@
+void automation.Extension_User_based_on_mail()
+{
+num = 0;
+unique_key = "some_unique_key";
+set_value = null;
+if(set_value == null)
+{
+	page_no = ifnull(ifnull(geturl("https://api.easy-pluginz.com/admin/v2/utils/getincrementalvalue?key=" + unique_key),Map()).get("data"),"1").toLong();
+}
+else
+{
+	page_no = ifnull(ifnull(geturl("https://api.easy-pluginz.com/admin/v2/utils/getincrementalvalue?key=" + unique_key + "&value=" + set_value),Map()).get("data"),"1").toLong();
+}
+// info page_no;
+users = zoho.crm.getRecords("Extension_Users",1,10,{"cvid":"2236049000082086067"});
+email_list = list();
+for each  user in users
+{
+	email = user.get("Admin_Email");
+	if(email != null)
+	{
+		
+		email_part= email.getSuffix("@");
+		email_suff= email.getSuffix(".");
+		
+		search_query = "(Email:starts_with:"+email_suff+")";
+// 		info search_query;
+
+		if ( email_suff != null ) 
+        {
+			response = invokeurl
+			[
+				url :"https://www.zohoapis.com/crm/v8/Zoho_Partners/search?criteria=" + encodeUrl(search_query)
+				type : GET
+				connection: "zoho_crm_connection"
+			];
+		if ( response.get("data").size() > 0 ) 
+        {
+			for each res in response.get("data")
+			{
+				record_id= res.get("id");
+// 				info zoho.crm.updateRecord("Zoho_Partners", record_id, {"Extension":true});
+				info {email_suff.length() : email_suff};
+			}
+        }
+        }
+		
+
+	}
+}
+if ( users.size() < 10 ) 
+{
+	sendmail
+    [
+    	from: zoho.adminuserid
+    	to: "shezanmahbub94@gmail.com"
+    	subject: "cron jobn stop"
+    	message: "cron jobn stop "
+    ]
+}
+}
